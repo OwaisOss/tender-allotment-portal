@@ -13,11 +13,12 @@ export interface User {
 
 export async function readUsers(): Promise<User[]> {
   try {
-    // Use get() to read directly via authenticated API — bypasses CDN cache entirely
-    const result = await get(BLOB_FILENAME, { access: "public" });
-    if (!result || result.statusCode !== 200 || !result.stream) return [];
-    // Convert ReadableStream to text
-    const response = new Response(result.stream);
+    // get() returns blob metadata including the download URL
+    const blob = await get(BLOB_FILENAME, { access: "public" });
+    if (!blob || !blob.url) return [];
+    // Fetch the actual content from the blob URL, bypassing CDN cache
+    const response = await fetch(blob.url, { cache: "no-store" });
+    if (!response.ok) return [];
     const data = await response.text();
     return data.trim() ? JSON.parse(data) : [];
   } catch (error: any) {

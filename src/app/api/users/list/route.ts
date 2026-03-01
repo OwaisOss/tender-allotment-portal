@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { readUsers } from "@/lib/db";
 import { isAuthenticated } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const runtime = "nodejs";
+
 export async function GET() {
   try {
     if (!(await isAuthenticated())) {
@@ -9,7 +13,13 @@ export async function GET() {
     }
 
     const users = await readUsers();
-    return NextResponse.json(users);
+    return NextResponse.json(users, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        "CDN-Cache-Control": "no-store",
+        "Vercel-CDN-Cache-Control": "no-store",
+      },
+    });
   } catch (error) {
     console.error("List users error:", error);
     return NextResponse.json(

@@ -26,7 +26,7 @@ export default function DashboardPage() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/users/list');
+      const res = await fetch('/api/users/list', { cache: 'no-store' });
       if (res.status === 401) { router.push('/admin'); return; }
       if (!res.ok) return;
       setUsers(await res.json() || []);

@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { findUserByPhone } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const runtime = "nodejs";
+
 export async function POST(request: NextRequest) {
   try {
     const { phoneNumber } = await request.json();

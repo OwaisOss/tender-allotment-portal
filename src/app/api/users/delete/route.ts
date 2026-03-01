@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { readUsers, writeUsers, findUserById } from "@/lib/db";
 import { isAuthenticated } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const runtime = "nodejs";
+
 export async function DELETE(request: NextRequest) {
   try {
     if (!(await isAuthenticated())) {

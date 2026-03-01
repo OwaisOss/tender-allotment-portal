@@ -21,7 +21,9 @@ export async function readUsers(): Promise<User[]> {
   try {
     const url = await getBlobUrl();
     if (!url) return [];
-    const res = await fetch(url, { cache: "no-store" });
+    // Append cache-busting param to bypass CDN-cached blob responses
+    const bustUrl = `${url}${url.includes("?") ? "&" : "?"}t=${Date.now()}`;
+    const res = await fetch(bustUrl, { cache: "no-store" });
     if (!res.ok) return [];
     const data = await res.text();
     return data.trim() ? JSON.parse(data) : [];

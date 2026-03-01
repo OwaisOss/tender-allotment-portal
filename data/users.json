@@ -1,0 +1,18 @@
+[
+  {
+    "id": "39863b59-166b-41c5-b5b7-5a7751a7a40e",
+    "name": "Owais",
+    "phoneNumber": "9353525841",
+    "fromDate": "2026-03-01",
+    "toDate": "2026-03-09",
+    "status": "Active"
+  },
+  {
+    "id": "8a3e137c-07f5-416d-80ac-f065f85dde23",
+    "name": "dummy",
+    "phoneNumber": "1244567811",
+    "fromDate": "2026-01-03",
+    "toDate": "2026-05-03",
+    "status": "Active"
+  }
+]

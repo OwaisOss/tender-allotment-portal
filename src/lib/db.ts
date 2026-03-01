@@ -1,6 +1,16 @@
-import { put, get } from "@vercel/blob";
+import {
+  collection,
+  doc,
+  getDocs,
+  setDoc,
+  deleteDoc,
+  getDoc,
+  query,
+  where,
+} from "firebase/firestore";
+import { db } from "./firebase";
 
-const BLOB_FILENAME = "users.json";
+const USERS_COLLECTION = "users";
 
 export interface User {
   id: string;
@@ -13,19 +23,9 @@ export interface User {
 
 export async function readUsers(): Promise<User[]> {
   try {
-    // get() returns blob metadata including the download URL
-    const blob = await get(BLOB_FILENAME, { access: "public" });
-    if (!blob || !blob.url) return [];
-    // Fetch the actual content from the blob URL, bypassing CDN cache
-    const response = await fetch(blob.url, { cache: "no-store" });
-    if (!response.ok) return [];
-    const data = await response.text();
-    return data.trim() ? JSON.parse(data) : [];
-  } catch (error: any) {
-    // Blob not found (first run) — return empty array
-    if (error?.code === "blob_not_found" || error?.name === "BlobNotFoundError") {
-      return [];
-    }
+    const snapshot = await getDocs(collection(db, USERS_COLLECTION));
+    return snapshot.docs.map((doc) => doc.data() as User);
+  } catch (error) {
     console.error("Error reading users:", error);
     return [];
   }
@@ -33,13 +33,18 @@ export async function readUsers(): Promise<User[]> {
 
 export async function writeUsers(users: User[]): Promise<void> {
   try {
-    await put(BLOB_FILENAME, JSON.stringify(users, null, 2), {
-      access: "public",
-      contentType: "application/json",
-      addRandomSuffix: false,
-      allowOverwrite: true,
-      cacheControlMaxAge: 0,
-    });
+    // Get existing docs and delete them
+    const snapshot = await getDocs(collection(db, USERS_COLLECTION));
+    const deletePromises = snapshot.docs.map((d) =>
+      deleteDoc(doc(db, USERS_COLLECTION, d.id))
+    );
+    await Promise.all(deletePromises);
+
+    // Write all users
+    const writePromises = users.map((user) =>
+      setDoc(doc(db, USERS_COLLECTION, user.id), user)
+    );
+    await Promise.all(writePromises);
   } catch (error) {
     console.error("Error writing users:", error);
     throw new Error("Failed to write to database");
@@ -47,18 +52,41 @@ export async function writeUsers(users: User[]): Promise<void> {
 }
 
 export async function findUserById(id: string): Promise<User | undefined> {
-  const users = await readUsers();
-  return users.find((u) => u.id === id);
+  try {
+    const docSnap = await getDoc(doc(db, USERS_COLLECTION, id));
+    return docSnap.exists() ? (docSnap.data() as User) : undefined;
+  } catch (error) {
+    console.error("Error finding user by id:", error);
+    return undefined;
+  }
 }
 
 export async function findUserByPhone(phoneNumber: string): Promise<User | undefined> {
-  const users = await readUsers();
-  return users.find((u) => u.phoneNumber === phoneNumber);
+  try {
+    const q = query(
+      collection(db, USERS_COLLECTION),
+      where("phoneNumber", "==", phoneNumber)
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.empty ? undefined : (snapshot.docs[0].data() as User);
+  } catch (error) {
+    console.error("Error finding user by phone:", error);
+    return undefined;
+  }
 }
 
 export async function phoneNumberExists(phoneNumber: string, excludeId?: string): Promise<boolean> {
-  const users = await readUsers();
-  return users.some((u) => u.phoneNumber === phoneNumber && u.id !== excludeId);
+  try {
+    const q = query(
+      collection(db, USERS_COLLECTION),
+      where("phoneNumber", "==", phoneNumber)
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.some((d) => d.id !== excludeId);
+  } catch (error) {
+    console.error("Error checking phone number:", error);
+    return false;
+  }
 }
 
 // Accepts dates in YYYY-MM-DD format (native date input)

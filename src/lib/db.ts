@@ -1,4 +1,4 @@
-import { put, head, list } from "@vercel/blob";
+import { put, get } from "@vercel/blob";
 
 const BLOB_FILENAME = "users.json";
 
@@ -11,23 +11,20 @@ export interface User {
   status: "Active" | "Inactive";
 }
 
-async function getBlobUrl(): Promise<string | null> {
-  const { blobs } = await list({ prefix: BLOB_FILENAME });
-  const blob = blobs.find((b) => b.pathname === BLOB_FILENAME);
-  return blob?.url ?? null;
-}
-
 export async function readUsers(): Promise<User[]> {
   try {
-    const url = await getBlobUrl();
-    if (!url) return [];
-    // Append cache-busting param to bypass CDN-cached blob responses
-    const bustUrl = `${url}${url.includes("?") ? "&" : "?"}t=${Date.now()}`;
-    const res = await fetch(bustUrl, { cache: "no-store" });
-    if (!res.ok) return [];
-    const data = await res.text();
+    // Use get() to read directly via authenticated API — bypasses CDN cache entirely
+    const result = await get(BLOB_FILENAME, { access: "public" });
+    if (!result || result.statusCode !== 200 || !result.stream) return [];
+    // Convert ReadableStream to text
+    const response = new Response(result.stream);
+    const data = await response.text();
     return data.trim() ? JSON.parse(data) : [];
-  } catch (error) {
+  } catch (error: any) {
+    // Blob not found (first run) — return empty array
+    if (error?.code === "blob_not_found" || error?.name === "BlobNotFoundError") {
+      return [];
+    }
     console.error("Error reading users:", error);
     return [];
   }

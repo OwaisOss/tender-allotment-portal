@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const user = findUserByPhone(phoneNumber);
+    const user = await findUserByPhone(phoneNumber);
 
     return NextResponse.json({
       exists: !!user,

@@ -25,7 +25,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Check if user exists
-    const user = findUserById(id);
+    const user = await findUserById(id);
     if (!user) {
       return NextResponse.json(
         { error: "User not found" },
@@ -34,7 +34,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Update status
-    const users = readUsers();
+    const users = await readUsers();
     const index = users.findIndex((u) => u.id === id);
     if (index === -1) {
       return NextResponse.json(
@@ -44,7 +44,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     users[index].status = status;
-    writeUsers(users);
+    await writeUsers(users);
 
     return NextResponse.json(users[index], { status: 200 });
   } catch (error) {

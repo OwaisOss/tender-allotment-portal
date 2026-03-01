@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if phone number already exists
-    if (phoneNumberExists(data.phoneNumber)) {
+    if (await phoneNumberExists(data.phoneNumber)) {
       return NextResponse.json(
         { error: "Phone number already exists" },
         { status: 400 }
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create new user
-    const users = readUsers();
+    const users = await readUsers();
     const newUser = {
       id: generateUUID(),
       name: data.name.trim(),
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     };
 
     users.push(newUser);
-    writeUsers(users);
+    await writeUsers(users);
 
     return NextResponse.json(newUser, { status: 201 });
   } catch (error) {

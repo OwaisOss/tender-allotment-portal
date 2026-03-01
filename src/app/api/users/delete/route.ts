@@ -18,7 +18,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Check if user exists
-    const user = findUserById(id);
+    const user = await findUserById(id);
     if (!user) {
       return NextResponse.json(
         { error: "User not found" },
@@ -27,9 +27,9 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Delete user
-    const users = readUsers();
+    const users = await readUsers();
     const filteredUsers = users.filter((u) => u.id !== id);
-    writeUsers(filteredUsers);
+    await writeUsers(filteredUsers);
 
     return NextResponse.json({ message: "User deleted successfully" }, { status: 200 });
   } catch (error) {

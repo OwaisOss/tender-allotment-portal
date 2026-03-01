@@ -1,7 +1,6 @@
-import fs from "fs";
-import path from "path";
+import { put, head, list } from "@vercel/blob";
 
-const DB_PATH = path.join(process.cwd(), "data", "users.json");
+const BLOB_FILENAME = "users.json";
 
 export interface User {
   id: string;
@@ -12,18 +11,19 @@ export interface User {
   status: "Active" | "Inactive";
 }
 
-export function ensureDataDir() {
-  const dir = path.dirname(DB_PATH);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
+async function getBlobUrl(): Promise<string | null> {
+  const { blobs } = await list({ prefix: BLOB_FILENAME });
+  const blob = blobs.find((b) => b.pathname === BLOB_FILENAME);
+  return blob?.url ?? null;
 }
 
-export function readUsers(): User[] {
+export async function readUsers(): Promise<User[]> {
   try {
-    ensureDataDir();
-    if (!fs.existsSync(DB_PATH)) return [];
-    const data = fs.readFileSync(DB_PATH, "utf-8");
+    const url = await getBlobUrl();
+    if (!url) return [];
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) return [];
+    const data = await res.text();
     return data.trim() ? JSON.parse(data) : [];
   } catch (error) {
     console.error("Error reading users:", error);
@@ -31,28 +31,32 @@ export function readUsers(): User[] {
   }
 }
 
-export function writeUsers(users: User[]): void {
+export async function writeUsers(users: User[]): Promise<void> {
   try {
-    ensureDataDir();
-    fs.writeFileSync(DB_PATH, JSON.stringify(users, null, 2));
+    await put(BLOB_FILENAME, JSON.stringify(users, null, 2), {
+      access: "public",
+      contentType: "application/json",
+      addRandomSuffix: false,
+    });
   } catch (error) {
     console.error("Error writing users:", error);
     throw new Error("Failed to write to database");
   }
 }
 
-export function findUserById(id: string): User | undefined {
-  return readUsers().find((u) => u.id === id);
+export async function findUserById(id: string): Promise<User | undefined> {
+  const users = await readUsers();
+  return users.find((u) => u.id === id);
 }
 
-export function findUserByPhone(phoneNumber: string): User | undefined {
-  return readUsers().find((u) => u.phoneNumber === phoneNumber);
+export async function findUserByPhone(phoneNumber: string): Promise<User | undefined> {
+  const users = await readUsers();
+  return users.find((u) => u.phoneNumber === phoneNumber);
 }
 
-export function phoneNumberExists(phoneNumber: string, excludeId?: string): boolean {
-  return readUsers().some(
-    (u) => u.phoneNumber === phoneNumber && u.id !== excludeId
-  );
+export async function phoneNumberExists(phoneNumber: string, excludeId?: string): Promise<boolean> {
+  const users = await readUsers();
+  return users.some((u) => u.phoneNumber === phoneNumber && u.id !== excludeId);
 }
 
 // Accepts dates in YYYY-MM-DD format (native date input)

@@ -8,7 +8,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const users = readUsers();
+    const users = await readUsers();
     return NextResponse.json(users);
   } catch (error) {
     console.error("List users error:", error);

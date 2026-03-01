@@ -27,7 +27,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Check if user exists
-    const user = findUserById(data.id);
+    const user = await findUserById(data.id);
     if (!user) {
       return NextResponse.json(
         { error: "User not found" },
@@ -36,7 +36,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Check if phone number is being changed and if new one exists
-    if (data.phoneNumber !== user.phoneNumber && phoneNumberExists(data.phoneNumber)) {
+    if (data.phoneNumber !== user.phoneNumber && await phoneNumberExists(data.phoneNumber)) {
       return NextResponse.json(
         { error: "Phone number already exists" },
         { status: 400 }
@@ -44,7 +44,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Update user
-    const users = readUsers();
+    const users = await readUsers();
     const index = users.findIndex((u) => u.id === data.id);
     if (index === -1) {
       return NextResponse.json(
@@ -61,7 +61,7 @@ export async function PUT(request: NextRequest) {
       toDate: data.toDate,
     };
 
-    writeUsers(users);
+    await writeUsers(users);
 
     return NextResponse.json(users[index], { status: 200 });
   } catch (error) {

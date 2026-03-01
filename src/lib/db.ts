@@ -36,6 +36,7 @@ export async function writeUsers(users: User[]): Promise<void> {
       access: "public",
       contentType: "application/json",
       addRandomSuffix: false,
+      allowOverwrite: true,
       cacheControlMaxAge: 0,
     });
   } catch (error) {
